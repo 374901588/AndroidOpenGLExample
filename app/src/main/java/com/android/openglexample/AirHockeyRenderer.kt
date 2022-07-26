@@ -2,9 +2,7 @@ package com.android.openglexample
 
 import android.content.Context
 import android.opengl.GLES20
-import android.opengl.GLES32
 import android.opengl.GLSurfaceView
-import android.util.Log
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -15,39 +13,39 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     companion object {
         private const val POSITION_COMPNENT_COUNT = 2
-
+        private const val COLOR_COMPONENT_COUNT = 3
         private const val BYTES_PRE_FLOAT = 4
 
-        private const val U_COLOR = "u_Color"
+        private const val STRIDE =
+            (POSITION_COMPNENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PRE_FLOAT
+
+        private const val A_COLOR = "a_Color"
 
         private const val A_POSITION = "a_Position"
     }
 
     // 不管是 x 轴还是 y 轴，OpenGL 会把屏幕映射到 [-1, 1] 的范围
     private val tableVerticesWithTriangles: FloatArray = floatArrayOf(
-        // triangles 1
-        -0.5f, -0.5f,
-        0.5f, 0.5f,
-        -0.5f, 0.5f,
+        // Order of coordinates: X, Y, R, G, B
 
-        // triangles 2
-        -0.5f, -0.5f,
-        0.5f, -0.5f,
-        0.5f, 0.5f,
+        // Triangle Fan
+        0f, 0f, 1f, 1f, 1f,
+        -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+        0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+        0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
+        -0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
+        -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
 
-        // line 1
-        -0.5f, 0f,
-        0.5f, 0f,
+        // Line 1
+        -0.5f, 0f, 1f, 0f, 0f,
+        0.5f, 0f, 1f, 0f, 0f,
 
-        // mallets 2
-        0f, -0.25f,
-        0f, 0.25f,
-
-        // 处于中间的冰球
-        0.0f, 0.0f
+        // Mallets
+        0f, -0.25f, 0f, 0f, 1f,
+        0f, 0.25f, 1f, 0f, 0f
     )
 
-    private var uColorLocaltion = 0
+    private var aColorLocation = 0
     private var aPositionLocaltion = 0
 
     private val vertexData: FloatBuffer
@@ -76,8 +74,8 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         GLES20.glUseProgram(programId)
 
-        uColorLocaltion = GLES20.glGetUniformLocation(programId, U_COLOR)
         aPositionLocaltion = GLES20.glGetAttribLocation(programId, A_POSITION)
+        aColorLocation = GLES20.glGetAttribLocation(programId, A_COLOR)
 
         vertexData.position(0)
         GLES20.glVertexAttribPointer(
@@ -87,12 +85,22 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
             POSITION_COMPNENT_COUNT,
             GLES20.GL_FLOAT,
             false,
-            0,
+            STRIDE,
             vertexData
         )
 
         GLES20.glEnableVertexAttribArray(aPositionLocaltion)
 
+        vertexData.position(POSITION_COMPNENT_COUNT)
+        GLES20.glVertexAttribPointer(
+            aColorLocation,
+            COLOR_COMPONENT_COUNT,
+            GLES20.GL_FLOAT,
+            false,
+            STRIDE,
+            vertexData
+        )
+        GLES20.glEnableVertexAttribArray(aColorLocation)
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
@@ -103,26 +111,17 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
         // 绘制桌子
-        GLES20.glUniform4f(uColorLocaltion, 1.0f, 1.0f, 1.0f, 1.0f)
         // 由于前面设置了 POSITION_COMPNENT_COUNT，所以这里读取 6 个，
         // 实际上是读取的 tableVerticesWithTriangles 中前 6 组数据，即对应 2 个三角形的 6 组坐标点
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 6)
 
         // 绘制分割线
-        GLES20.glUniform4f(uColorLocaltion, 1.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glDrawArrays(GLES20.GL_LINES, 6, 2)
 
         // 绘制蓝色木槌
-        GLES20.glUniform4f(uColorLocaltion, 0.0f, 0.0f, 1.0f, 1.0f)
         GLES20.glDrawArrays(GLES20.GL_POINTS, 8, 1)
 
         // 绘制红色木槌
-        GLES20.glUniform4f(uColorLocaltion, 1.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glDrawArrays(GLES20.GL_POINTS, 9, 1)
-
-        // 绘制处于中间的冰球
-        // TODO 如何单独设置冰球的大小？？？
-        GLES20.glUniform4f(uColorLocaltion, 0.0f, 0.0f, 0.0f, 1.0f)
-        GLES20.glDrawArrays(GLES20.GL_POINTS, 10, 1)
     }
 }
