@@ -22,6 +22,8 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         private const val A_COLOR = "a_Color"
 
         private const val A_POSITION = "a_Position"
+
+        private const val U_MATRIX = "u_Matrix"
     }
 
     // 不管是 x 轴还是 y 轴，OpenGL 会把屏幕映射到 [-1, 1] 的范围
@@ -29,21 +31,24 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // Order of coordinates: X, Y, R, G, B
 
         // Triangle Fan
-        0f, 0f, 1f, 1f, 1f,
-        -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-        0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-        0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
-        -0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
-        -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+         0f,       0f,     1f,     1f,      1f,
+        -0.5f,  -0.8f,   0.7f,   0.7f,    0.7f,
+         0.5f,  -0.8f,   0.7f,   0.7f,    0.7f,
+         0.5f,   0.8f,   0.7f,   0.7f,    0.7f,
+        -0.5f,   0.8f,   0.7f,   0.7f,    0.7f,
+        -0.5f,  -0.8f,   0.7f,   0.7f,    0.7f,
 
         // Line 1
         -0.5f, 0f, 1f, 0f, 0f,
         0.5f, 0f, 1f, 0f, 0f,
 
         // Mallets
-        0f, -0.25f, 0f, 0f, 1f,
-        0f, 0.25f, 1f, 0f, 0f
+        0f, -0.4f, 0f, 0f, 1f,
+        0f, 0.4f, 1f, 0f, 0f
     )
+
+    private val projectionMatrix: FloatArray = FloatArray(16)
+    private var uMatrixLocation: Int = 0
 
     private var aColorLocation = 0
     private var aPositionLocaltion = 0
@@ -101,14 +106,48 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
             vertexData
         )
         GLES20.glEnableVertexAttribArray(aColorLocation)
+
+        // TODO 是啥含义
+        uMatrixLocation = GLES20.glGetUniformLocation(programId, U_MATRIX)
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
+
+        val aspectRation: Float
+        if (width > height) {
+            aspectRation = width * 1.0f / height
+            android.opengl.Matrix.orthoM(
+                projectionMatrix,
+                0,
+                -aspectRation,
+                aspectRation,
+                -1f,
+                1f,
+                -1f,
+                1f
+            )
+        } else {
+            aspectRation = height * 1.0f / width
+            android.opengl.Matrix.orthoM(
+                projectionMatrix,
+                0,
+                -1f,
+                1f,
+                -aspectRation,
+                aspectRation,
+                -1f,
+                1f
+            )
+        }
+
     }
 
     override fun onDrawFrame(p0: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
+        // 设置正交投影矩阵
+        GLES20.glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0)
 
         // 绘制桌子
         // 由于前面设置了 POSITION_COMPNENT_COUNT，所以这里读取 6 个，
