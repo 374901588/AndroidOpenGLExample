@@ -117,6 +117,9 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         val aspectRation: Float
         if (width > height) {
             aspectRation = width * 1.0f / height
+            // 针对第 5 章的练习，如果要通过调整正交矩阵来实现桌子的
+            //   - 放大缩小：则可以通过调整 left 与 right 的差值大小来实现（top 与 bottom 的也同理）
+            //   - 平移：则可以通过调整 left 与 right 的值（但是差值要保证是 2，top 与 bottom 的也同理）
             android.opengl.Matrix.orthoM(
                 projectionMatrix,
                 0,
@@ -140,7 +143,6 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
                 1f
             )
         }
-
     }
 
     override fun onDrawFrame(p0: GL10?) {
