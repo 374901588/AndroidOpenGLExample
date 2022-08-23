@@ -3,6 +3,7 @@ package com.android.openglexample
 import android.content.Context
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.opengl.Matrix
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -12,7 +13,7 @@ import javax.microedition.khronos.opengles.GL10
 class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     companion object {
-        private const val POSITION_COMPNENT_COUNT = 4
+        private const val POSITION_COMPNENT_COUNT = 2
         private const val COLOR_COMPONENT_COUNT = 3
         private const val BYTES_PRE_FLOAT = 4
 
@@ -28,24 +29,26 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     // 不管是 x 轴还是 y 轴，OpenGL 会把屏幕映射到 [-1, 1] 的范围
     private val tableVerticesWithTriangles: FloatArray = floatArrayOf(
-        // Order of coordinates: X, Y, Z, W, R, G, B
+        // Order of coordinates: X, Y, R, G, B
 
         // Triangle Fan
-         0f,       0f,     0f,      1.5f,       1f,     1f,      1f,
-        -0.5f,  -0.8f,     0f,        1f,       0.7f,   0.7f,    0.7f,
-         0.5f,  -0.8f,     0f,        1f,       0.7f,   0.7f,    0.7f,
-         0.5f,   0.8f,     0f,        2f,       0.7f,   0.7f,    0.7f,
-        -0.5f,   0.8f,     0f,        2f,       0.7f,   0.7f,    0.7f,
-        -0.5f,  -0.8f,     0f,        1f,       0.7f,   0.7f,    0.7f,
+        0f,       0f,     1f,     1f,      1f,
+        -0.5f,  -0.8f,   0.7f,   0.7f,    0.7f,
+        0.5f,  -0.8f,   0.7f,   0.7f,    0.7f,
+        0.5f,   0.8f,   0.7f,   0.7f,    0.7f,
+        -0.5f,   0.8f,   0.7f,   0.7f,    0.7f,
+        -0.5f,  -0.8f,   0.7f,   0.7f,    0.7f,
 
         // Line 1
-        -0.5f, 0f, 0f, 1.5f, 1f, 0f, 0f,
-        0.5f, 0f, 0f, 1.5f, 1f, 0f, 0f,
+        -0.5f, 0f, 1f, 0f, 0f,
+        0.5f, 0f, 1f, 0f, 0f,
 
         // Mallets
-        0f, -0.4f, 0f, 1.25f, 0f, 0f, 1f,
-        0f, 0.4f, 0f, 1.75f, 1f, 0f, 0f
+        0f, -0.4f, 0f, 0f, 1f,
+        0f, 0.4f, 1f, 0f, 0f
     )
+
+    private val modelMatrix: FloatArray = FloatArray(16)
 
     private val projectionMatrix: FloatArray = FloatArray(16)
     private var uMatrixLocation: Int = 0
@@ -114,35 +117,19 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
 
-        val aspectRation: Float
-        if (width > height) {
-            aspectRation = width * 1.0f / height
-            // 针对第 5 章的练习，如果要通过调整正交矩阵来实现桌子的
-            //   - 放大缩小：则可以通过调整 left 与 right 的差值大小来实现（top 与 bottom 的也同理）
-            //   - 平移：则可以通过调整 left 与 right 的值（但是差值要保证是 2，top 与 bottom 的也同理）
-            android.opengl.Matrix.orthoM(
-                projectionMatrix,
-                0,
-                -aspectRation,
-                aspectRation,
-                -1f,
-                1f,
-                -1f,
-                1f
-            )
-        } else {
-            aspectRation = height * 1.0f / width
-            android.opengl.Matrix.orthoM(
-                projectionMatrix,
-                0,
-                -1f,
-                1f,
-                -aspectRation,
-                aspectRation,
-                -1f,
-                1f
-            )
-        }
+        val aspect = width * 1.0f / height
+        MatrixHelper.perspectiveM(projectionMatrix, 45f, aspect, 1f, 10f)
+
+        // 设置为单位矩阵
+        Matrix.setIdentityM(modelMatrix, 0)
+        // 再沿着 z 轴平移 -2
+        Matrix.translateM(modelMatrix, 0, 0f, 0f, -2.5f)
+        // 沿 x 轴旋转 -60 度
+        Matrix.rotateM(modelMatrix, 0, -60f, 1f, 0f, 0f)
+
+        val tmp = FloatArray(16)
+        Matrix.multiplyMM(tmp, 0, projectionMatrix, 0, modelMatrix, 0)
+        System.arraycopy(tmp, 0, projectionMatrix, 0, tmp.size)
     }
 
     override fun onDrawFrame(p0: GL10?) {
