@@ -12,7 +12,7 @@ import javax.microedition.khronos.opengles.GL10
 class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     companion object {
-        private const val POSITION_COMPNENT_COUNT = 2
+        private const val POSITION_COMPNENT_COUNT = 4
         private const val COLOR_COMPONENT_COUNT = 3
         private const val BYTES_PRE_FLOAT = 4
 
@@ -28,23 +28,23 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     // 不管是 x 轴还是 y 轴，OpenGL 会把屏幕映射到 [-1, 1] 的范围
     private val tableVerticesWithTriangles: FloatArray = floatArrayOf(
-        // Order of coordinates: X, Y, R, G, B
+        // Order of coordinates: X, Y, Z, W, R, G, B
 
         // Triangle Fan
-         0f,       0f,     1f,     1f,      1f,
-        -0.5f,  -0.8f,   0.7f,   0.7f,    0.7f,
-         0.5f,  -0.8f,   0.7f,   0.7f,    0.7f,
-         0.5f,   0.8f,   0.7f,   0.7f,    0.7f,
-        -0.5f,   0.8f,   0.7f,   0.7f,    0.7f,
-        -0.5f,  -0.8f,   0.7f,   0.7f,    0.7f,
+         0f,       0f,     0f,      1.5f,       1f,     1f,      1f,
+        -0.5f,  -0.8f,     0f,        1f,       0.7f,   0.7f,    0.7f,
+         0.5f,  -0.8f,     0f,        1f,       0.7f,   0.7f,    0.7f,
+         0.5f,   0.8f,     0f,        2f,       0.7f,   0.7f,    0.7f,
+        -0.5f,   0.8f,     0f,        2f,       0.7f,   0.7f,    0.7f,
+        -0.5f,  -0.8f,     0f,        1f,       0.7f,   0.7f,    0.7f,
 
         // Line 1
-        -0.5f, 0f, 1f, 0f, 0f,
-        0.5f, 0f, 1f, 0f, 0f,
+        -0.5f, 0f, 0f, 1.5f, 1f, 0f, 0f,
+        0.5f, 0f, 0f, 1.5f, 1f, 0f, 0f,
 
         // Mallets
-        0f, -0.4f, 0f, 0f, 1f,
-        0f, 0.4f, 1f, 0f, 0f
+        0f, -0.4f, 0f, 1.25f, 0f, 0f, 1f,
+        0f, 0.4f, 0f, 1.75f, 1f, 0f, 0f
     )
 
     private val projectionMatrix: FloatArray = FloatArray(16)
