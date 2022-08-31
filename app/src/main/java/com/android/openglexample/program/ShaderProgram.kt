@@ -17,6 +17,7 @@ open class ShaderProgram(context: Context, vertextShaderResId: Int, fragShaderRe
         const val A_TEXTURE_COORDINATES = "a_TextureCoordinates"
     }
 
+    // 链接程序，获取对应的 id
     protected val program: Int = ShaderHelper.buildProgram(
         readTextFileFromRes(context, vertextShaderResId),
         readTextFileFromRes(context, fragShaderResId)

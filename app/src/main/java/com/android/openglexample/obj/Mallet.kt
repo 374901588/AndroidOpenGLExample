@@ -14,12 +14,13 @@ class Mallet {
             (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * Constants.BYTES_PRE_FLOAT
     }
 
-    private val VERTEX_DATA = floatArrayOf(
+    // 顶点数据
+    private val vertexData = floatArrayOf(
         0f,     -0.4f,      0f,     0f,     1f,
         0f,      0.4f,      1f,     0f,     0f
     )
 
-    private val vertexArr = VertexArray(VERTEX_DATA)
+    private val vertexArr = VertexArray(vertexData)
 
     fun bindData(colorPragram: ColorShaderProgram) {
         vertexArr.setVertexAttribPointer(
@@ -38,6 +39,7 @@ class Mallet {
     }
 
     fun draw() {
+        // 2 即 VERTEX_DATA 中有 2 组元素需要渲染
         GLES20.glDrawArrays(GLES20.GL_POINTS, 0, 2)
     }
 }

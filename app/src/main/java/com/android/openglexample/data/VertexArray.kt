@@ -14,6 +14,8 @@ class VertexArray(vertexData: FloatArray) {
         .asFloatBuffer()
         .put(vertexData)
 
+    // 将特定的属性 attributeLocation 与缓冲数组对应的定点元素进行绑定
+    // 从而在渲染的时候可以直接使用
     fun setVertexAttribPointer(
         dataOffset: Int,
         attributeLocation: Int,

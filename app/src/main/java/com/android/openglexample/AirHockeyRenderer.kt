@@ -62,7 +62,10 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
         textureProgram.useProgram()
+        // texture 为纹理资源对应的对象 id，projectionMatrix 为透视矩阵
+        // uniform 是一种给 shader 传递参数的重要方式，
         textureProgram.setUniforms(projectionMatrix, texture)
+        // 把纹理资源绑定给 table
         table.bindData(textureProgram)
         table.draw()
 
