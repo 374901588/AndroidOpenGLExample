@@ -8,6 +8,7 @@ import androidx.annotation.DrawableRes
 
 object TextureHelper {
 
+    @JvmStatic
     fun loadTexture(context: Context, @DrawableRes resID: Int): Int {
         val textureObjIds = IntArray(1)
         // 生成纹理对象，获取其 id

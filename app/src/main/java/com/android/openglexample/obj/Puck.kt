@@ -3,10 +3,10 @@ package com.android.openglexample.obj
 import com.android.openglexample.data.VertexArray
 import com.android.openglexample.program.ColorShaderProgram
 
-class Mallet(
+class Puck(
     radius: Float,
     val height: Float,
-    numPointsAroundMallet: Int
+    numPointsAroundPuck: Int
 ) {
 
     companion object {
@@ -17,12 +17,13 @@ class Mallet(
     private val drawList: List<DrawCommand>
 
     init {
-        val createMallet = ObjectBuilder.createMallet(
-            Point(0f, 0f, 0f), radius, height, numPointsAroundMallet
+        val createPuck = ObjectBuilder.createPuck(
+            Cylinder(Point(0f, 0f, 0f), radius, height),
+            numPointsAroundPuck
         )
 
-        vertexArray = VertexArray(createMallet.vertexData)
-        drawList = createMallet.drawList
+        vertexArray = VertexArray(createPuck.vertexData)
+        drawList = createPuck.drawList
     }
 
     // 把顶点数据绑定到着色器程序定义的属性上

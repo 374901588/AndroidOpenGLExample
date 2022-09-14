@@ -12,7 +12,8 @@ open class ShaderProgram(context: Context, vertextShaderResId: Int, fragShaderRe
         const val U_TEXTURE_UNIT = "u_TextureUnit"
 
         const val A_POSITION = "a_Position"
-        const val A_COLOR = "a_Color"
+
+        const val U_COLOR = "u_Color"
 
         const val A_TEXTURE_COORDINATES = "a_TextureCoordinates"
     }

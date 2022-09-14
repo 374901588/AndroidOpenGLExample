@@ -9,18 +9,20 @@ class ColorShaderProgram(context: Context) :
 
     private val uMatrixLocation: Int = GLES20.glGetUniformLocation(program, U_MATRIX)
 
-    private val aColorLocation = GLES20.glGetAttribLocation(program, A_COLOR)
+    private val uColorLocation = GLES20.glGetUniformLocation(program, U_COLOR)
     private val aPositionLocaltion = GLES20.glGetAttribLocation(program, A_POSITION)
 
-    fun setUniforms(matrix: FloatArray) {
+    fun setUniforms(
+        matrix: FloatArray,
+        r: Float,
+        g: Float,
+        b: Float,
+    ) {
         GLES20.glUniformMatrix4fv(uMatrixLocation, 1, false, matrix, 0)
+        GLES20.glUniform4f(uColorLocation, r, g, b, 1f)
     }
 
     fun getPositionAttributeLocation(): Int {
         return aPositionLocaltion
-    }
-
-    fun getColorAttributeLocation(): Int {
-        return aColorLocation
     }
 }

@@ -2,6 +2,7 @@ package com.android.openglexample
 
 object MatrixHelper {
 
+    @JvmStatic
     fun perspectiveM(m: FloatArray, yFovInDegress: Float, aspect: Float, n: Float, f: Float) {
         val angleInRadians: Float = (yFovInDegress * Math.PI / 2.0f).toFloat()
         val a: Float = (1.0 / Math.tan(angleInRadians / 2.0)).toFloat()
