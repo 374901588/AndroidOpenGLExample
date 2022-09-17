@@ -4,7 +4,7 @@ import com.android.openglexample.data.VertexArray
 import com.android.openglexample.program.ColorShaderProgram
 
 class Mallet(
-    radius: Float,
+    val radius: Float,
     val height: Float,
     numPointsAroundMallet: Int
 ) {

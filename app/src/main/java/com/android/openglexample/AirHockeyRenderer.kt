@@ -10,7 +10,15 @@ import com.android.openglexample.program.TextureShaderProgram
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
+// TODO 目前实现的用蓝木槌碰撞冰球，但是冰球再碰撞之后移动的时候，
+//  如果遇到了木槌，并不会反向再碰撞木槌而使木槌被动移动，因为这部分还没有实现
 class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
+
+    private val leftBound = -0.5f
+    private val rightBound = 0.5f
+
+    private val farBound = -0.8f
+    private val nearBound = 0.8f
 
     // 投影矩阵：帮助创建三维的幻象
     // 在本例中通过 MatrixHelper.perspectiveM() 来处理了
@@ -37,9 +45,11 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private var texture = 0
 
+    private fun clamp(value: Float, min: Float, max: Float): Float {
+        return Math.min(max, Math.max(value, min))
+    }
+
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
-
-
         GLES20.glClearColor(0f, 0f, 0f, 0f)
 
         table = Table()
@@ -57,6 +67,10 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
+
+        // 初始化冰球的数据
+        puckPos = Point(0f, puck.height / 2f, 0f)
+        puckVector = Vector(0f, 0f, 0f)
 
         val aspect = width * 1.0f / height
         MatrixHelper.perspectiveM(projectionMatrix, 45f, aspect, 1f, 10f)
@@ -103,11 +117,52 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         mallet.bindData(colorProgram)
         mallet.draw()
 
+        drawPuck()
+    }
+
+    private fun drawPuck() {
+        // 冰球被碰撞之后的看距离
+        puckPos = puckPos.translate(puckVector)
+
+        // 边界检查
+
+        // 检查冰球是否越过了桌子的两边，否则反转移动的方向
+        if (puckPos.x < leftBound + puck.radius ||
+            puckPos.x > rightBound - puck.radius
+        ) {
+            puckVector = Vector(-puckVector.x, puckVector.y, puckVector.z)
+        }
+
+        // 然后检查冰球是否越过桌子的近边或者远边
+        // 注意，负的 z 值表示距离，东西离得越远，z 值越小
+        if (puckPos.z < farBound + puck.radius ||
+            puckPos.z > nearBound - puck.radius
+        ) {
+            puckVector = Vector(puckVector.x, puckVector.y, -puckVector.z)
+        }
+
+        puckPos = Point(
+            clamp(
+                puckPos.x,
+                leftBound + puck.radius,
+                rightBound - puck.radius
+            ),
+            puckPos.y,
+            clamp(
+                puckPos.z,
+                farBound + puck.radius,
+                nearBound - puck.radius
+            )
+        )
+
         // 冰球
-        positionObjectInScene(0f, puck.height / 2f, 0f)
+        positionObjectInScene(puckPos.x, puckPos.y, puckPos.z)
         colorProgram.setUniforms(modelViewProjectionMatrix, 0.8f, 0.8f, 1f)
         puck.bindData(colorProgram)
         puck.draw()
+
+        // 模拟阻尼，使冰球的移动向量长度不断变小
+        puckVector = puckVector.scale(0.99f)
     }
 
     private fun positionTableInScene() {
@@ -133,8 +188,12 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     // region 触控反馈
 
-    private var malletPressed = false;
+    private lateinit var puckPos: Point
+    private lateinit var puckVector: Vector
+
+    private var malletPressed = false
     private lateinit var blueMalletPos: Point
+    private lateinit var preBlueMalletPos: Point
 
     fun handleTouchPress(x: Float, y: Float) {
         // 假设木槌被一个相当大小的球包围
@@ -163,7 +222,29 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
             val touchedPoint = intersectsPoint(ray, plane)
 
-            blueMalletPos = Point(touchedPoint.x, mallet.height / 2f, touchedPoint.z)
+            preBlueMalletPos = blueMalletPos
+            blueMalletPos = Point(
+                clamp(
+                    touchedPoint.x,
+                    leftBound + mallet.radius,
+                    rightBound - mallet.radius
+                ),
+                mallet.height / 2f,
+                clamp(
+                    touchedPoint.z,
+                    // 让蓝木槌不跨越中线
+                    0f + mallet.radius,
+                    nearBound - mallet.radius
+                ),
+            )
+
+            // 木槌移动之后，与冰球的距离
+            val distance = vectorBetween(blueMalletPos, puckPos).length()
+            // 如果这个距离小于 puck.radius + mallet.radius，则表示两者碰到了
+            if (distance < (puck.radius + mallet.radius)) {
+                // 蓝木槌前后的位置，获取冰球移动的向量
+                puckVector = vectorBetween(preBlueMalletPos, blueMalletPos)
+            }
         }
     }
 

@@ -4,7 +4,7 @@ import com.android.openglexample.data.VertexArray
 import com.android.openglexample.program.ColorShaderProgram
 
 class Puck(
-    radius: Float,
+    val radius: Float,
     val height: Float,
     numPointsAroundPuck: Int
 ) {
