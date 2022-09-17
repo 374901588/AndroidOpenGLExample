@@ -4,9 +4,7 @@ import android.content.Context
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
-import com.android.openglexample.obj.Mallet
-import com.android.openglexample.obj.Puck
-import com.android.openglexample.obj.Table
+import com.android.openglexample.obj.*
 import com.android.openglexample.program.ColorShaderProgram
 import com.android.openglexample.program.TextureShaderProgram
 import javax.microedition.khronos.egl.EGLConfig
@@ -40,10 +38,15 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var texture = 0
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
+
+
         GLES20.glClearColor(0f, 0f, 0f, 0f)
 
         table = Table()
         mallet = Mallet(0.08f, 0.15f, 32)
+
+        blueMalletPos = Point(0f, mallet.height / 2f, 0.4f)
+
         puck = Puck(0.06f, 0.02f, 32)
 
         textureProgram = TextureShaderProgram(context)
@@ -78,6 +81,9 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // 把投影和视图矩阵乘在一起的结果缓存到 viewProjectionMatrix 中
         Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
+        // 获得反转矩阵
+        Matrix.invertM(invertedProjectionMatrix, 0, viewProjectionMatrix, 0)
+
         positionTableInScene()
         textureProgram.useProgram()
         textureProgram.setUniforms(modelViewProjectionMatrix, texture)
@@ -92,7 +98,7 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         mallet.draw()
 
         // 第二个木槌
-        positionObjectInScene(0f, mallet.height / 2f, 0.4f)
+        positionObjectInScene(blueMalletPos)
         colorProgram.setUniforms(modelViewProjectionMatrix, 0f, 0f, 1f)
         mallet.bindData(colorProgram)
         mallet.draw()
@@ -120,4 +126,83 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.translateM(modelMatrix, 0, x, y, z)
         Matrix.multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0)
     }
+
+    private fun positionObjectInScene(point: Point) {
+        positionObjectInScene(point.x, point.y, point.z)
+    }
+
+    // region 触控反馈
+
+    private var malletPressed = false;
+    private lateinit var blueMalletPos: Point
+
+    fun handleTouchPress(x: Float, y: Float) {
+        // 假设木槌被一个相当大小的球包围
+        // 简化射线与木槌是否相交的判断，从而只需要判断射线是否与球体相交
+        // 即判断射线到球心的距离，是否 <= 球体半径
+        val malletBoundingSphere = Sphere(
+            Point(
+                blueMalletPos.x,
+                blueMalletPos.y,
+                blueMalletPos.z
+            ),
+            mallet.height / 2f
+        )
+
+        val ray = convertNormalized2DPointToRay(x, y)
+
+        malletPressed = intersects(malletBoundingSphere, ray)
+
+    }
+
+    fun handleTouchDrag(x: Float, y: Float) {
+        if (malletPressed) {
+            val ray = convertNormalized2DPointToRay(x, y)
+            // 定义一个平面来代表桌面
+            val plane = Plane(Point(0f, 0f, 0f), Vector(0f, 1f, 0f))
+
+            val touchedPoint = intersectsPoint(ray, plane)
+
+            blueMalletPos = Point(touchedPoint.x, mallet.height / 2f, touchedPoint.z)
+        }
+    }
+
+    // 反转矩阵，取消视图矩阵和投影矩阵的效果，
+    // 把被触碰点的转换为一个三维射线，射线与场景内物体相交的点，
+    // 即对应到触碰到的物体
+    private val invertedProjectionMatrix = FloatArray(16)
+
+    private fun convertNormalized2DPointToRay(x: Float, y: Float): Ray {
+        // (x, y, z, w)
+        val nearPointNdc = floatArrayOf(x, y, -1f, 1f)
+        val farPointNdc = floatArrayOf(x, y, 1f, 1f)
+
+
+        val nearPointWord = FloatArray(4)
+        val farPointWord = FloatArray(4)
+
+        // 得到在世界空间中的坐标，其中 w 是反转的
+        Matrix.multiplyMV(nearPointWord, 0, invertedProjectionMatrix, 0, nearPointNdc, 0)
+        Matrix.multiplyMV(farPointWord, 0, invertedProjectionMatrix, 0, farPointNdc, 0)
+
+        // 把 x、y、z 除以反转的 w，以撤销透视除法的影响
+        // 最终把被触碰的屏幕上的点，转换为世界空间中远端、近端的两个点
+        // 从而可以进一步获取到对应的射线
+        devideByW(nearPointWord)
+        devideByW(farPointWord)
+
+        val nearPointRay = Point(nearPointWord[0], nearPointWord[1], nearPointWord[2])
+        val farPointRay = Point(farPointWord[0], farPointWord[1], farPointWord[2])
+
+        return Ray(nearPointRay, vectorBetween(nearPointRay, farPointRay))
+    }
+
+    private fun devideByW(vector: FloatArray) {
+        vector[0] /= vector[3]
+        vector[1] /= vector[3]
+        vector[2] /= vector[3]
+    }
+
+    // endregion 触控反馈
+
 }
